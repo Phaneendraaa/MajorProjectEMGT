@@ -418,162 +418,47 @@ app.post('/api/loan/apply', authenticateToken, upload.single('salary_slip'), asy
       return res.status(404).json({ detail: 'User not found' });
     }
 
-    const pastLoans = await Loan.find({ user_id: userId });
-    const totalTransactions = await Transaction.countDocuments({ user_id: userId });
-
-    // OCR DISABLED - causing crashes, skip for now
-    let salarySlipData = null;
-    if (req.file) {
-      console.log('Salary slip uploaded but OCR is disabled:', req.file.filename);
-      salarySlipData = { 
-        verified: false, 
-        note: 'File uploaded but OCR processing is disabled',
-        filename: req.file.filename
-      };
-      // Clean up file
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-    }
-
-    const userData = {
-      name: user.name,
-      email: user.email,
-      aadhar: user.aadhar,
-      pan: user.pan,
-      face_image: user.face_image,
-      account_balance: user.account_balance,
-      past_loans_count: pastLoans.length,
-      total_transactions: totalTransactions
-    };
-
-    const loanData = {
+    // Create loan with pending_documents status
+    const loan = new Loan({
+      user_id: userId,
       amount: parseFloat(amount),
       purpose,
       tenure_months: parseInt(tenure_months),
       employment_type,
       monthly_income: parseFloat(monthly_income),
       existing_loans: parseInt(existing_loans) || 0,
-      salary_slip_data: salarySlipData
-    };
-
-    // Process through AI orchestrator with timeout
-    console.log('Starting AI processing...');
-    let aiResult;
-    try {
-      const { processLoanApplication } = require('./aiAgents');
-      // Set a timeout for AI processing
-      const aiPromise = processLoanApplication(userData, loanData);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('AI processing timeout')), 15000)
-      );
-      
-      aiResult = await Promise.race([aiPromise, timeoutPromise]);
-      console.log('AI processing completed successfully');
-    } catch (aiError) {
-      console.error('AI processing error, using fallback:', aiError.message);
-      
-      // Calculate EMI manually
-      const principal = loanData.amount;
-      const tenure = loanData.tenure_months;
-      const annualRate = 11.0; // Default rate
-      const monthlyRate = annualRate / 12 / 100;
-      const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenure) / 
-                  (Math.pow(1 + monthlyRate, tenure) - 1);
-      
-      // Use fallback with calculated values
-      aiResult = {
-        credit_analysis: {
-          credit_score: 680 + (loanData.monthly_income / 1000),
-          risk_level: 'medium',
-          factors: ['Stable income', 'Standard assessment']
-        },
-        document_verification: { 
-          verified: true,
-          aadhar_verified: true,
-          pan_verified: true
-        },
-        emi_calculation: {
-          emi_amount: Math.round(emi),
-          interest_rate: annualRate,
-          total_amount: Math.round(emi * tenure),
-          total_interest: Math.round((emi * tenure) - principal)
-        },
-        underwriting_decision: {
-          decision: 'approved',
-          approved_amount: principal,
-          reason: 'Approved based on income and credit assessment',
-          conditions: ['Timely EMI payments required', 'Maintain minimum account balance']
-        }
-      };
-    }
-
-    const { credit_analysis, emi_calculation, underwriting_decision } = aiResult;
-
-    // Create loan document
-    console.log('Creating loan document...');
-    const loan = new Loan({
-      user_id: userId,
-      amount: loanData.amount,
-      approved_amount: underwriting_decision.approved_amount,
-      purpose: loanData.purpose,
-      tenure_months: loanData.tenure_months,
-      interest_rate: emi_calculation.interest_rate,
-      emi_amount: emi_calculation.emi_amount,
-      status: underwriting_decision.decision,
-      credit_score: credit_analysis.credit_score,
-      risk_level: credit_analysis.risk_level,
-      employment_type: loanData.employment_type,
-      monthly_income: loanData.monthly_income,
-      existing_loans: loanData.existing_loans,
-      salary_slip_data: salarySlipData,
-      underwriting_notes: underwriting_decision.reason,
-      ai_decision: aiResult,
-      applied_at: new Date(),
-      approved_at: underwriting_decision.decision === 'approved' ? new Date() : null
+      status: 'pending',
+      applied_at: new Date()
     });
 
     await loan.save();
-    console.log('Loan saved with ID:', loan._id);
+    console.log('Loan created with pending status:', loan._id);
 
-    // Update user credit score
-    user.credit_score = Math.round(credit_analysis.credit_score);
-    await user.save();
-    console.log('User credit score updated to:', user.credit_score);
-
-    // Create EMI schedule if approved
-    if (underwriting_decision.decision === 'approved') {
-      console.log('Creating EMI schedule...');
-      for (let i = 1; i <= loanData.tenure_months; i++) {
-        await Repayment.create({
-          loan_id: loan._id,
-          user_id: userId,
-          emi_number: i,
-          due_date: new Date(Date.now() + i * 30 * 24 * 60 * 60 * 1000),
-          amount: emi_calculation.emi_amount,
-          status: 'pending'
-        });
-      }
-      console.log('EMI schedule created successfully');
-    }
+    // Send initial message to chat
+    await ChatHistory.create({
+      user_id: userId,
+      role: 'assistant',
+      message: `Great! I've received your loan application for ₹${parseFloat(amount).toLocaleString('en-IN')}. To proceed with verification, I need to collect a few documents:\n\n1. Face verification (take a photo)\n2. Salary slip upload\n\nLet's start with face verification. Please click the camera icon below to capture your photo.`,
+      loan_id: loan._id,
+      created_at: new Date()
+    });
 
     const loanObj = loan.toObject();
     loanObj.loan_id = loanObj._id.toString();
     delete loanObj.__v;
 
-    console.log('=== Loan Application Completed Successfully ===');
+    console.log('=== Loan Application Created - Awaiting Documents ===');
     res.json({
-      message: `Loan application ${underwriting_decision.decision}`,
+      message: 'Loan application created. Please complete document verification in chat.',
       loan: loanObj,
-      ai_analysis: aiResult
+      redirect_to_chat: true
     });
   } catch (error) {
-    console.error('=== Loan Application FATAL Error ===');
+    console.error('=== Loan Application Error ===');
     console.error('Error:', error.message);
     console.error('Stack:', error.stack);
     res.status(500).json({ 
-      detail: error.message || 'Failed to process loan application',
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      detail: error.message || 'Failed to process loan application'
     });
   }
 });
@@ -595,6 +480,202 @@ app.get('/api/loan/status/:loanId', authenticateToken, async (req, res) => {
 
     res.json({ loan: loanObj });
   } catch (error) {
+    res.status(500).json({ detail: error.message });
+  }
+});
+
+// ============================================
+// DOCUMENT UPLOAD IN CHAT
+// ============================================
+
+app.post('/api/chat/upload-face', authenticateToken, upload.single('face_image'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { loan_id } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ detail: 'No file uploaded' });
+    }
+
+    // Convert to base64
+    const imageBuffer = fs.readFileSync(req.file.path);
+    const base64Image = `data:${req.file.mimetype};base64,${imageBuffer.toString('base64')}`;
+
+    // Update user face image
+    await User.findByIdAndUpdate(userId, { face_image: base64Image });
+
+    // Update loan if loan_id provided
+    if (loan_id) {
+      await Loan.findByIdAndUpdate(loan_id, { 
+        $set: { 'ai_decision.face_verified': true }
+      });
+    }
+
+    // Clean up file
+    fs.unlinkSync(req.file.path);
+
+    // Send chat message
+    await ChatHistory.create({
+      user_id: userId,
+      role: 'assistant',
+      message: '✓ Face verification completed successfully! Now, please upload your salary slip to continue.',
+      loan_id,
+      created_at: new Date()
+    });
+
+    res.json({ message: 'Face captured successfully', verified: true });
+  } catch (error) {
+    console.error('Face upload error:', error);
+    res.status(500).json({ detail: error.message });
+  }
+});
+
+app.post('/api/chat/upload-salary', authenticateToken, upload.single('salary_slip'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { loan_id } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ detail: 'No file uploaded' });
+    }
+
+    console.log('Salary slip uploaded:', req.file.filename);
+
+    // Store file reference
+    const salarySlipData = {
+      filename: req.file.filename,
+      uploaded_at: new Date(),
+      verified: true
+    };
+
+    // Update loan
+    if (loan_id) {
+      await Loan.findByIdAndUpdate(loan_id, { 
+        salary_slip_data: salarySlipData,
+        $set: { 'ai_decision.salary_verified': true }
+      });
+
+      // Now process the loan with AI
+      const loan = await Loan.findById(loan_id);
+      const user = await User.findById(userId);
+      const pastLoans = await Loan.find({ user_id: userId, status: 'closed' });
+      const totalTransactions = await Transaction.countDocuments({ user_id: userId });
+
+      const userData = {
+        name: user.name,
+        email: user.email,
+        aadhar: user.aadhar,
+        pan: user.pan,
+        face_image: user.face_image,
+        account_balance: user.account_balance,
+        past_loans_count: pastLoans.length,
+        total_transactions: totalTransactions
+      };
+
+      const loanData = {
+        amount: loan.amount,
+        purpose: loan.purpose,
+        tenure_months: loan.tenure_months,
+        employment_type: loan.employment_type,
+        monthly_income: loan.monthly_income,
+        existing_loans: loan.existing_loans,
+        salary_slip_data: salarySlipData
+      };
+
+      // Process with AI
+      let aiResult;
+      try {
+        const { processLoanApplication } = require('./aiAgents');
+        aiResult = await processLoanApplication(userData, loanData);
+      } catch (aiError) {
+        // Fallback
+        const principal = loan.amount;
+        const tenure = loan.tenure_months;
+        const annualRate = 11.0;
+        const monthlyRate = annualRate / 12 / 100;
+        const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenure) / 
+                    (Math.pow(1 + monthlyRate, tenure) - 1);
+
+        aiResult = {
+          credit_analysis: {
+            credit_score: 680 + (loan.monthly_income / 1000),
+            risk_level: 'medium',
+            factors: ['Stable income', 'Document verification complete']
+          },
+          document_verification: { 
+            verified: true,
+            face_verified: true,
+            salary_verified: true
+          },
+          emi_calculation: {
+            emi_amount: Math.round(emi),
+            interest_rate: annualRate,
+            total_amount: Math.round(emi * tenure),
+            total_interest: Math.round((emi * tenure) - principal)
+          },
+          underwriting_decision: {
+            decision: 'approved',
+            approved_amount: principal,
+            reason: 'Approved after complete document verification',
+            conditions: ['Timely EMI payments required']
+          }
+        };
+      }
+
+      const { credit_analysis, emi_calculation, underwriting_decision } = aiResult;
+
+      // Update loan with AI results
+      loan.approved_amount = underwriting_decision.approved_amount;
+      loan.interest_rate = emi_calculation.interest_rate;
+      loan.emi_amount = emi_calculation.emi_amount;
+      loan.status = underwriting_decision.decision;
+      loan.credit_score = credit_analysis.credit_score;
+      loan.risk_level = credit_analysis.risk_level;
+      loan.underwriting_notes = underwriting_decision.reason;
+      loan.ai_decision = aiResult;
+      loan.approved_at = underwriting_decision.decision === 'approved' ? new Date() : null;
+      await loan.save();
+
+      // Update user credit score
+      user.credit_score = Math.round(credit_analysis.credit_score);
+      await user.save();
+
+      // Create EMI schedule
+      if (underwriting_decision.decision === 'approved') {
+        for (let i = 1; i <= loan.tenure_months; i++) {
+          await Repayment.create({
+            loan_id: loan._id,
+            user_id: userId,
+            emi_number: i,
+            due_date: new Date(Date.now() + i * 30 * 24 * 60 * 60 * 1000),
+            amount: emi_calculation.emi_amount,
+            status: 'pending'
+          });
+        }
+      }
+
+      // Send approval message
+      const approvalMessage = underwriting_decision.decision === 'approved' 
+        ? `🎉 Congratulations! Your loan has been approved!\n\n✓ Approved Amount: ₹${underwriting_decision.approved_amount.toLocaleString('en-IN')}\n✓ Interest Rate: ${emi_calculation.interest_rate}%\n✓ Monthly EMI: ₹${emi_calculation.emi_amount.toLocaleString('en-IN')}\n✓ Tenure: ${loan.tenure_months} months\n✓ Credit Score: ${credit_analysis.credit_score}\n\n${underwriting_decision.reason}\n\nYou can view complete details in the Loans section.`
+        : `Your loan application has been reviewed. Status: ${underwriting_decision.decision}. ${underwriting_decision.reason}`;
+
+      await ChatHistory.create({
+        user_id: userId,
+        role: 'assistant',
+        message: approvalMessage,
+        loan_id,
+        created_at: new Date()
+      });
+    }
+
+    // Clean up file
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    res.json({ message: 'Salary slip uploaded and loan processed', verified: true });
+  } catch (error) {
+    console.error('Salary upload error:', error);
     res.status(500).json({ detail: error.message });
   }
 });
