@@ -19,9 +19,23 @@ const LoanApplicationPage = () => {
     monthly_income: '',
     existing_loans: '0'
   });
+  const [salarySlip, setSalarySlip] = useState(null);
+  const [salarySlipPreview, setSalarySlipPreview] = useState(null);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSalarySlip(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSalarySlipPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -29,16 +43,19 @@ const LoanApplicationPage = () => {
     setLoading(true);
 
     try {
-      const payload = {
-        amount: parseFloat(formData.amount),
-        purpose: formData.purpose,
-        tenure_months: parseInt(formData.tenure_months),
-        employment_type: formData.employment_type,
-        monthly_income: parseFloat(formData.monthly_income),
-        existing_loans: parseInt(formData.existing_loans)
-      };
+      const formDataToSend = new FormData();
+      formDataToSend.append('amount', formData.amount);
+      formDataToSend.append('purpose', formData.purpose);
+      formDataToSend.append('tenure_months', formData.tenure_months);
+      formDataToSend.append('employment_type', formData.employment_type);
+      formDataToSend.append('monthly_income', formData.monthly_income);
+      formDataToSend.append('existing_loans', formData.existing_loans);
+      
+      if (salarySlip) {
+        formDataToSend.append('salary_slip', salarySlip);
+      }
 
-      const { data } = await applyLoan(payload);
+      const { data } = await applyLoan(formDataToSend);
       toast.success('Loan application submitted successfully!');
       navigate('/loans');
     } catch (err) {
@@ -170,6 +187,46 @@ const LoanApplicationPage = () => {
                   max="10"
                   data-testid="existing-loans-input"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-2">
+                  Upload Salary Slip (Optional) - AI will verify via OCR
+                </label>
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-smooth">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="salary-slip-upload"
+                    data-testid="salary-slip-input"
+                  />
+                  <label 
+                    htmlFor="salary-slip-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Calculator className="w-12 h-12 text-muted-foreground" />
+                    {salarySlipPreview ? (
+                      <div className="mt-2">
+                        <p className="text-sm text-success font-medium mb-2">✓ File uploaded</p>
+                        {salarySlip?.name && (
+                          <p className="text-xs text-muted-foreground">{salarySlip.name}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">Click to upload salary slip</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG or PDF (Max 5MB)</p>
+                      </>
+                    )}
+                  </label>
+                </div>
+                {salarySlipPreview && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    AI will automatically verify your salary details using OCR technology
+                  </p>
+                )}
               </div>
             </div>
 

@@ -15,7 +15,11 @@ export const getLoans = () => api.get('/user/loans');
 export const getEMISchedule = (loanId) => api.get(`/user/emi-schedule/${loanId}`);
 
 // Loan
-export const applyLoan = (loanData) => api.post('/loan/apply', loanData);
+export const applyLoan = (loanData) => {
+  // Support both JSON and FormData
+  const headers = loanData instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+  return api.post('/loan/apply', loanData, { headers });
+};
 export const getLoanStatus = (loanId) => api.get(`/loan/status/${loanId}`);
 
 // Chat
