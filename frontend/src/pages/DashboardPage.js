@@ -40,7 +40,7 @@ const DashboardPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96" data-testid="dashboard-loading">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="w-16 h-16 rounded-full border-4 border-purple-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -57,250 +57,216 @@ const DashboardPage = () => {
   } = dashboardData || {};
 
   return (
-    <div className="space-y-6" data-testid="dashboard-page">
+    <div className="space-y-8 max-w-7xl mx-auto" data-testid="dashboard-page">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-4xl font-heading font-light mb-2">
+        <h1 className="text-4xl font-bold text-foreground mb-2">
           Welcome back, {user?.name}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-lg">
           Here's your financial overview
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="account-balance-card">
-          <div className="absolute top-0 right-0 w-32 h-32 gradient-purple opacity-20 blur-3xl rounded-full"></div>
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-2xl gradient-purple flex items-center justify-center">
-                <Wallet className="h-6 w-6 text-white" weight="fill" />
-              </div>
+      {/* Stats Grid - Minimal Design */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Balance Card */}
+        <div className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-smooth" data-testid="account-balance-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <Wallet className="h-6 w-6 text-purple-500" weight="fill" />
             </div>
-            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
-              Total Balance
-            </p>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-              ₹{account_balance?.toLocaleString('en-IN')}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Available funds
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium mb-2">
+            Total Balance
+          </p>
+          <p className="text-3xl font-bold text-foreground">
+            ₹{account_balance?.toLocaleString('en-IN')}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">Available funds</p>
+        </div>
 
-        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="credit-score-card">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500 opacity-20 blur-3xl rounded-full"></div>
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
-                <ChartLine className="h-6 w-6 text-white" weight="bold" />
-              </div>
+        {/* Credit Score Card */}
+        <div className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-smooth" data-testid="credit-score-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+              <ChartLine className="h-6 w-6 text-green-500" weight="bold" />
             </div>
-            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
-              Credit Score
-            </p>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-success">
-              {credit_score || 'N/A'}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {credit_score >= 750 ? 'Excellent' : credit_score >= 650 ? 'Good' : 'Fair'}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium mb-2">
+            Credit Score
+          </p>
+          <p className="text-3xl font-bold text-green-500">
+            {credit_score || 'N/A'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            {credit_score >= 750 ? 'Excellent' : credit_score >= 650 ? 'Good' : 'Fair'}
+          </p>
+        </div>
 
-        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="active-loans-card">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 opacity-20 blur-3xl rounded-full"></div>
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-white" weight="fill" />
-              </div>
+        {/* Active Loans Card */}
+        <div className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-smooth" data-testid="active-loans-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+              <CreditCard className="h-6 w-6 text-blue-500" weight="fill" />
             </div>
-            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
-              Active Loans
-            </p>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-foreground">
-              {active_loans?.length || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              ₹{total_loan_amount?.toLocaleString('en-IN')} total
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium mb-2">
+            Active Loans
+          </p>
+          <p className="text-3xl font-bold text-foreground">
+            {active_loans?.length || 0}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            ₹{total_loan_amount?.toLocaleString('en-IN')} total
+          </p>
+        </div>
 
-        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="upcoming-emi-card">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 opacity-20 blur-3xl rounded-full"></div>
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-white" weight="fill" />
-              </div>
+        {/* Next EMI Card */}
+        <div className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-smooth" data-testid="upcoming-emi-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-orange-500" weight="fill" />
             </div>
-            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
-              Next EMI
-            </p>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-foreground">
-              ₹{upcoming_emis?.[0]?.amount?.toLocaleString('en-IN') || '0'}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {upcoming_emis?.[0] ? new Date(upcoming_emis[0].due_date).toLocaleDateString() : 'No pending EMI'}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium mb-2">
+            Next EMI
+          </p>
+          <p className="text-3xl font-bold text-foreground">
+            ₹{upcoming_emis?.[0]?.amount?.toLocaleString('en-IN') || '0'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            {upcoming_emis?.[0] ? new Date(upcoming_emis[0].due_date).toLocaleDateString() : 'No pending EMI'}
+          </p>
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <Card className="gradient-card card-glow" data-testid="quick-actions-card">
-        <CardHeader>
-          <CardTitle className="text-2xl">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <Button 
-              onClick={() => navigate('/apply')}
-              data-testid="apply-loan-button"
-              className="gradient-purple hover:opacity-90 transition-smooth px-6 py-6 text-base font-semibold rounded-2xl shadow-lg"
-            >
-              <TrendUp className="mr-2 w-5 h-5" weight="bold" />
-              Apply for Loan
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/loans')}
-              data-testid="view-loans-button"
-              className="border-2 border-primary/30 hover:border-primary hover:bg-primary/5 px-6 py-6 text-base rounded-2xl transition-smooth"
-            >
-              <Receipt className="mr-2 w-5 h-5" />
-              View All Loans
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/chat')}
-              data-testid="chat-assistant-button"
-              className="border-2 border-secondary/30 hover:border-secondary hover:bg-secondary/5 px-6 py-6 text-base rounded-2xl transition-smooth"
-            >
-              <img 
-                src="https://static.prod-images.emergentagent.com/jobs/3d532350-4ab2-4271-a6b2-e6cc9757f4fd/images/6410e99b2c0f1e05ee693f795dbd10e96bde9208795e8b9ffb8cbb277abfba2f.png"
-                alt="AI"
-                className="w-5 h-5 mr-2"
-              />
-              Chat with AI Assistant
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Quick Actions - Minimal */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+        <div className="flex flex-wrap gap-3">
+          <Button 
+            onClick={() => navigate('/apply')}
+            data-testid="apply-loan-button"
+            className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-5 rounded-xl font-medium transition-smooth"
+          >
+            <TrendUp className="mr-2 w-5 h-5" weight="bold" />
+            Apply for Loan
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/loans')}
+            data-testid="view-loans-button"
+            className="border-2 px-6 py-5 rounded-xl font-medium transition-smooth"
+          >
+            <Receipt className="mr-2 w-5 h-5" />
+            View All Loans
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/chat')}
+            data-testid="chat-assistant-button"
+            className="border-2 px-6 py-5 rounded-xl font-medium transition-smooth"
+          >
+            <img 
+              src="https://static.prod-images.emergentagent.com/jobs/3d532350-4ab2-4271-a6b2-e6cc9757f4fd/images/6410e99b2c0f1e05ee693f795dbd10e96bde9208795e8b9ffb8cbb277abfba2f.png"
+              alt="AI"
+              className="w-5 h-5 mr-2"
+            />
+            Chat with AI
+          </Button>
+        </div>
+      </div>
 
       {/* Active Loans */}
       {active_loans && active_loans.length > 0 && (
-        <Card data-testid="active-loans-section">
-          <CardHeader>
-            <CardTitle>Active Loans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {active_loans.map((loan, idx) => (
-                <div 
-                  key={idx}
-                  className="flex items-center justify-between p-4 border border-border rounded-md hover:bg-muted/50 transition-smooth"
-                  data-testid={`active-loan-${idx}`}
-                >
-                  <div>
-                    <p className="font-medium">{loan.purpose}</p>
-                    <p className="text-sm text-muted-foreground">
-                      ₹{loan.approved_amount?.toLocaleString('en-IN')} • {loan.tenure_months} months
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-primary">
-                      ₹{loan.emi_amount?.toLocaleString('en-IN')}/mo
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {loan.status === 'disbursed' ? 'Active' : 'Processing'}
-                    </p>
-                  </div>
+        <div className="bg-card border border-border rounded-2xl p-6" data-testid="active-loans-section">
+          <h2 className="text-xl font-bold mb-4">Active Loans</h2>
+          <div className="space-y-3">
+            {active_loans.map((loan, idx) => (
+              <div 
+                key={idx}
+                className="flex items-center justify-between p-4 border border-border rounded-xl hover:bg-muted/50 transition-smooth"
+                data-testid={`active-loan-${idx}`}
+              >
+                <div>
+                  <p className="font-medium text-foreground">{loan.purpose}</p>
+                  <p className="text-sm text-muted-foreground">
+                    ₹{loan.approved_amount?.toLocaleString('en-IN')} • {loan.tenure_months} months
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="text-right">
+                  <p className="font-semibold text-foreground">
+                    ₹{loan.emi_amount?.toLocaleString('en-IN')}/mo
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {loan.status === 'disbursed' ? 'Active' : 'Processing'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Recent Transactions */}
       {recent_transactions && recent_transactions.length > 0 && (
-        <Card data-testid="recent-transactions-section">
-          <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recent_transactions.slice(0, 5).map((txn, idx) => (
-                <div 
-                  key={idx}
-                  className="flex items-center justify-between border-b border-border pb-3 last:border-0"
-                  data-testid={`transaction-${idx}`}
-                >
-                  <div className="flex items-center gap-3">
-                    {txn.type === 'credit' || txn.type === 'loan_disbursement' ? (
-                      <TrendUp className="text-success" weight="bold" />
-                    ) : (
-                      <Receipt className="text-destructive" />
-                    )}
-                    <div>
-                      <p className="font-medium text-sm">{txn.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(txn.created_at).toLocaleDateString()}
-                      </p>
+        <div className="bg-card border border-border rounded-2xl p-6" data-testid="recent-transactions-section">
+          <h2 className="text-xl font-bold mb-4">Recent Transactions</h2>
+          <div className="space-y-3">
+            {recent_transactions.slice(0, 5).map((txn, idx) => (
+              <div 
+                key={idx}
+                className="flex items-center justify-between pb-3 border-b border-border last:border-0"
+                data-testid={`transaction-${idx}`}
+              >
+                <div className="flex items-center gap-3">
+                  {txn.type === 'credit' || txn.type === 'loan_disbursement' ? (
+                    <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <TrendUp className="text-green-500 w-5 h-5" weight="bold" />
                     </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                      <Receipt className="text-red-500 w-5 h-5" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium text-sm text-foreground">{txn.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(txn.created_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  <p className={`font-medium ${
-                    txn.type === 'credit' || txn.type === 'loan_disbursement' 
-                      ? 'text-success' 
-                      : 'text-destructive'
-                  }`}>
-                    {txn.type === 'credit' || txn.type === 'loan_disbursement' ? '+' : '-'}
-                    ₹{txn.amount?.toLocaleString('en-IN')}
-                  </p>
                 </div>
-              ))}
-            </div>
-            <Button 
-              variant="link" 
-              className="w-full mt-4"
-              onClick={() => navigate('/transactions')}
-              data-testid="view-all-transactions-button"
-            >
-              View All Transactions
-            </Button>
-          </CardContent>
-        </Card>
+                <p className={`font-semibold ${
+                  txn.type === 'credit' || txn.type === 'loan_disbursement' 
+                    ? 'text-green-500' 
+                    : 'text-red-500'
+                }`}>
+                  {txn.type === 'credit' || txn.type === 'loan_disbursement' ? '+' : '-'}
+                  ₹{txn.amount?.toLocaleString('en-IN')}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Past Loans Summary */}
       {past_loans && past_loans.length > 0 && (
-        <Card data-testid="past-loans-section">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="text-success" weight="fill" />
-              Loan History
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              You have successfully completed <span className="font-bold text-success">{past_loans.length}</span> loans with us.
-              This reflects positively on your credit profile.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-card border border-border rounded-2xl p-6" data-testid="past-loans-section">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="text-green-500 w-6 h-6" weight="fill" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground mb-2">Loan History</h3>
+              <p className="text-muted-foreground">
+                You have successfully completed <span className="font-bold text-green-500">{past_loans.length}</span> loans with us.
+                This reflects positively on your credit profile.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
