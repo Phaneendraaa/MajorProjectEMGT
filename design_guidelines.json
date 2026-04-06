@@ -1,0 +1,121 @@
+{
+  "project_domain": "Finance, Banking",
+  "theme": "Light/Dark Toggle",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "design_philosophy": "Authoritative, clear, function-first, with a high-end corporate blue/navy finish. Minimalist Control Room dashboard for scanning. High contrast for data legibility.",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "Manrope",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-light",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed",
+      "labels": "uppercase text-xs tracking-[0.2em] font-bold"
+    }
+  },
+  "colors": {
+    "light_mode": {
+      "background": "#F8FAFC",
+      "foreground": "#0A0E17",
+      "card": "#FFFFFF",
+      "card_foreground": "#0A0E17",
+      "primary": "#1E3A8A",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#E2E8F0",
+      "secondary_foreground": "#1E3A8A",
+      "accent": "#2563EB",
+      "accent_foreground": "#FFFFFF",
+      "border": "#CBD5E1",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "destructive": "#EF4444",
+      "muted": "#F1F5F9",
+      "muted_foreground": "#64748B"
+    },
+    "dark_mode": {
+      "background": "#020617",
+      "foreground": "#F8FAFC",
+      "card": "#0F172A",
+      "card_foreground": "#F8FAFC",
+      "primary": "#3B82F6",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#1E293B",
+      "secondary_foreground": "#F8FAFC",
+      "accent": "#60A5FA",
+      "accent_foreground": "#020617",
+      "border": "#334155",
+      "success": "#34D399",
+      "warning": "#FBBF24",
+      "destructive": "#F87171",
+      "muted": "#1E293B",
+      "muted_foreground": "#94A3B8"
+    },
+    "rules": {
+      "tinting": "Neutral greys are tinted with Blue (e.g., Slate/gray scale from Tailwind). Never use pure #000000.",
+      "contrast": "Maintain APCA standards. Interactive elements must have 3:1 ratio.",
+      "hover_states": "Always explicitly set hover text color (e.g., hover:bg-slate-800 hover:text-white)."
+    }
+  },
+  "spacing_and_layout": {
+    "container_padding": "p-6 sm:p-8 lg:p-12",
+    "grid_strategy": "MODE B: THE 'CONTROL ROOM' GRID for Dashboard. Tight gap (gap-4 or gap-6), strict data correlation, no jagged bottoms. Items must stretch (h-full).",
+    "alignment": "Left-align data and text. Only center empty states or hero text if needed.",
+    "borders_and_radius": "Subtle roundness. max 8px border-radius (rounded-md to rounded-lg). Go for a crisp, structural look."
+  },
+  "surfaces": {
+    "cards": "Flat background, 1px subtle border (border-border), no shadow by default. Hover: Slight lift (-translate-y-1) and shadow-lg.",
+    "headers": "Crystal Glassmorphism: bg-white/70 or bg-slate-900/70, backdrop-blur-xl, 1px bottom border. Must sit at z-50.",
+    "chatbot_panel": "Grid Borders/Technical look. High contrast, clean demarcations.",
+    "modals": "Flat solid surfaces with clear borders to avoid visual refraction."
+  },
+  "components": {
+    "strategy": "Use Shadcn UI components. Strictly customize them to match the 8px max radius, structural typography, and tinted borders.",
+    "navigation": "Collapsible left sidebar for global navigation. Top header for context/profile.",
+    "tables": "Shadcn Table. Use alternating row colors or clear bottom borders for scanning. High contrast headers.",
+    "forms": "Use Shadcn Input, Form, Select. Left-align labels. Clear focus states (ring-2 ring-primary).",
+    "buttons": "Limit primary color to main CTAs only. Secondary actions use outline or ghost variants. data-testid is MANDATORY.",
+    "charts": "Shadcn Charts / Recharts. Use Line charts for trends, Donut charts for allocations. Stick to primary/accent blue palettes with success/warning colors."
+  },
+  "motion": {
+    "general": "Minimalist micro-interactions. Quick transitions for feedback (e.g., transition-all duration-200 ease-in-out).",
+    "hover": "Subtle background shifts and border darkening.",
+    "lists": "Staggered entrance for transaction lists using Framer Motion.",
+    "accessibility": "Respect prefers-reduced-motion."
+  },
+  "media": {
+    "icons": {
+      "library": "@phosphor-icons/react",
+      "style": "Regular or Duotone for dense dashboards."
+    },
+    "images": {
+      "bank_logo": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/3d532350-4ab2-4271-a6b2-e6cc9757f4fd/images/41cfd2866828185eabb9bbe5a0d8ea17e90186b34883da31fcf4d07dc3b6a698.png",
+        "description": "Minimalist professional corporate bank logo, abstract geometric shape in deep navy blue."
+      },
+      "login_background": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/3d532350-4ab2-4271-a6b2-e6cc9757f4fd/images/d2effbc066ebe8a7a25226e9d01e2e8a14791f77453b778b6cfaf0229eef2eac.png",
+        "description": "High-end dark navy blue abstract architectural background for the login/registration screen."
+      },
+      "ai_avatar": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/3d532350-4ab2-4271-a6b2-e6cc9757f4fd/images/6410e99b2c0f1e05ee693f795dbd10e96bde9208795e8b9ffb8cbb277abfba2f.png",
+        "description": "Professional AI virtual assistant avatar for the chatbot UI."
+      }
+    }
+  },
+  "accessibility_and_testing": {
+    "testing_attributes": "All interactive elements MUST include data-testid (e.g., data-testid='login-submit-button').",
+    "contrast": "Ensure text over gradients/images uses text-shadow if needed. WCAG AA minimum."
+  },
+  "instructions_to_main_agent": [
+    "Use Tailwind CSS with the defined color variables.",
+    "Install Google Fonts 'Outfit' (Headings) and 'Manrope' (Body).",
+    "Install and use @phosphor-icons/react for iconography.",
+    "Implement light/dark mode toggle utilizing the defined color palettes.",
+    "Structure the dashboard using the 'Control Room' grid layout.",
+    "Use the provided media URLs for the logo, login background, and AI chatbot avatar.",
+    "All forms and interactive UI should utilize heavily customized Shadcn components (max 8px radius).",
+    "Integrate Framer Motion for subtle staggered list entrances and hover states."
+  ]
+}
