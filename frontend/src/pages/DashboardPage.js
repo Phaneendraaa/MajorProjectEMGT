@@ -69,70 +69,90 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-hover" data-testid="account-balance-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium uppercase tracking-[0.2em]">
-              Account Balance
-            </CardTitle>
-            <Wallet className="h-5 w-5 text-primary" weight="fill" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="account-balance-card">
+          <div className="absolute top-0 right-0 w-32 h-32 gradient-purple opacity-20 blur-3xl rounded-full"></div>
+          <CardHeader className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl gradient-purple flex items-center justify-center">
+                <Wallet className="h-6 w-6 text-white" weight="fill" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
+              Total Balance
+            </p>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-primary">
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
               ₹{account_balance?.toLocaleString('en-IN')}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               Available funds
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover" data-testid="credit-score-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium uppercase tracking-[0.2em]">
+        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="credit-score-card">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500 opacity-20 blur-3xl rounded-full"></div>
+          <CardHeader className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                <ChartLine className="h-6 w-6 text-white" weight="bold" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
               Credit Score
-            </CardTitle>
-            <ChartLine className="h-5 w-5 text-success" weight="bold" />
+            </p>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-success">
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold text-success">
               {credit_score || 'N/A'}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               {credit_score >= 750 ? 'Excellent' : credit_score >= 650 ? 'Good' : 'Fair'}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover" data-testid="active-loans-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium uppercase tracking-[0.2em]">
+        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="active-loans-card">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 opacity-20 blur-3xl rounded-full"></div>
+          <CardHeader className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                <CreditCard className="h-6 w-6 text-white" weight="fill" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
               Active Loans
-            </CardTitle>
-            <CreditCard className="h-5 w-5 text-accent" weight="fill" />
+            </p>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-accent">
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold text-foreground">
               {active_loans?.length || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               ₹{total_loan_amount?.toLocaleString('en-IN')} total
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover" data-testid="upcoming-emi-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium uppercase tracking-[0.2em]">
-              Upcoming EMI
-            </CardTitle>
-            <Clock className="h-5 w-5 text-warning" weight="fill" />
+        <Card className="gradient-card card-glow hover:-translate-y-1 transition-smooth overflow-hidden relative" data-testid="upcoming-emi-card">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 opacity-20 blur-3xl rounded-full"></div>
+          <CardHeader className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-white" weight="fill" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4 uppercase tracking-wider font-medium">
+              Next EMI
+            </p>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-warning">
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold text-foreground">
               ₹{upcoming_emis?.[0]?.amount?.toLocaleString('en-IN') || '0'}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               {upcoming_emis?.[0] ? new Date(upcoming_emis[0].due_date).toLocaleDateString() : 'No pending EMI'}
             </p>
           </CardContent>
@@ -140,31 +160,34 @@ const DashboardPage = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card data-testid="quick-actions-card">
+      <Card className="gradient-card card-glow" data-testid="quick-actions-card">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle className="text-2xl">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
             <Button 
               onClick={() => navigate('/apply')}
               data-testid="apply-loan-button"
+              className="gradient-purple hover:opacity-90 transition-smooth px-6 py-6 text-base font-semibold rounded-2xl shadow-lg"
             >
-              <TrendUp className="mr-2" weight="bold" />
+              <TrendUp className="mr-2 w-5 h-5" weight="bold" />
               Apply for Loan
             </Button>
             <Button 
               variant="outline"
               onClick={() => navigate('/loans')}
               data-testid="view-loans-button"
+              className="border-2 border-primary/30 hover:border-primary hover:bg-primary/5 px-6 py-6 text-base rounded-2xl transition-smooth"
             >
-              <Receipt className="mr-2" />
+              <Receipt className="mr-2 w-5 h-5" />
               View All Loans
             </Button>
             <Button 
               variant="outline"
               onClick={() => navigate('/chat')}
               data-testid="chat-assistant-button"
+              className="border-2 border-secondary/30 hover:border-secondary hover:bg-secondary/5 px-6 py-6 text-base rounded-2xl transition-smooth"
             >
               <img 
                 src="https://static.prod-images.emergentagent.com/jobs/3d532350-4ab2-4271-a6b2-e6cc9757f4fd/images/6410e99b2c0f1e05ee693f795dbd10e96bde9208795e8b9ffb8cbb277abfba2f.png"
