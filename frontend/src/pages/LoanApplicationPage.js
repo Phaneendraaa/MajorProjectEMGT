@@ -40,7 +40,17 @@ const LoanApplicationPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted!');
+    
+    // Validation
+    if (!formData.amount || !formData.purpose || !formData.tenure_months || 
+        !formData.employment_type || !formData.monthly_income) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
     setLoading(true);
+    console.log('Form data:', formData);
 
     try {
       const formDataToSend = new FormData();
@@ -49,31 +59,39 @@ const LoanApplicationPage = () => {
       formDataToSend.append('tenure_months', formData.tenure_months);
       formDataToSend.append('employment_type', formData.employment_type);
       formDataToSend.append('monthly_income', formData.monthly_income);
-      formDataToSend.append('existing_loans', formData.existing_loans);
+      formDataToSend.append('existing_loans', formData.existing_loans || '0');
       
       if (salarySlip) {
+        console.log('Attaching salary slip:', salarySlip.name);
         formDataToSend.append('salary_slip', salarySlip);
       }
 
+      console.log('Sending loan application...');
+      toast.info('Processing your application with AI...');
+      
       const { data } = await applyLoan(formDataToSend);
+      console.log('Loan application response:', data);
       
       // Show success with AI decision
-      const decision = data.ai_analysis?.underwriting_decision?.decision || 'submitted';
-      toast.success(`Loan application ${decision}! Redirecting...`);
+      const decision = data.ai_analysis?.underwriting_decision?.decision || data.loan?.status || 'submitted';
+      toast.success(`Loan ${decision}! Redirecting to status page...`);
       
       // Navigate to loan status page
       setTimeout(() => {
-        if (data.loan?.loan_id || data.loan?._id) {
-          const loanId = data.loan.loan_id || data.loan._id;
+        const loanId = data.loan?.loan_id || data.loan?._id;
+        if (loanId) {
+          console.log('Navigating to loan status:', loanId);
           navigate(`/loan/${loanId}`);
         } else {
+          console.log('No loan ID, navigating to loans page');
           navigate('/loans');
         }
-      }, 1500);
+      }, 2000);
     } catch (err) {
       console.error('Loan application error:', err);
-      toast.error(err.response?.data?.detail || 'Failed to submit application');
-    } finally {
+      console.error('Error details:', err.response?.data);
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to submit application. Please try again.';
+      toast.error(errorMsg);
       setLoading(false);
     }
   };
@@ -244,11 +262,22 @@ const LoanApplicationPage = () => {
           <div className="flex gap-4 pt-4">
             <Button 
               type="submit" 
-              className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-12 rounded-xl font-medium" 
+              className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-12 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
               disabled={loading}
               data-testid="submit-loan-button"
+              onClick={(e) => {
+                console.log('Button clicked!');
+                console.log('Form data at click:', formData);
+              }}
             >
-              {loading ? 'Processing...' : 'Submit Application'}
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  <span>Processing with AI...</span>
+                </div>
+              ) : (
+                'Submit Application'
+              )}
             </Button>
             <Button 
               type="button" 
@@ -256,6 +285,7 @@ const LoanApplicationPage = () => {
               onClick={() => navigate('/dashboard')}
               data-testid="cancel-button"
               className="h-12 rounded-xl"
+              disabled={loading}
             >
               Cancel
             </Button>
