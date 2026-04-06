@@ -92,7 +92,7 @@ const LoansPage = () => {
           <h2 className="text-2xl font-heading mb-4">Active Loans</h2>
           <div className="grid grid-cols-1 gap-4">
             {activeLoans.map((loan, idx) => (
-              <Card key={idx} className="card-hover" data-testid={`active-loan-card-${idx}`}>
+              <Card key={idx} className="card-hover cursor-pointer" data-testid={`active-loan-card-${idx}`} onClick={() => navigate(`/loan/${loan.loan_id || loan._id}`)}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>

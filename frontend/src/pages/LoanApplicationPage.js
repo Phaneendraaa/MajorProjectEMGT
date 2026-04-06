@@ -56,9 +56,22 @@ const LoanApplicationPage = () => {
       }
 
       const { data } = await applyLoan(formDataToSend);
-      toast.success('Loan application submitted successfully!');
-      navigate('/loans');
+      
+      // Show success with AI decision
+      const decision = data.ai_analysis?.underwriting_decision?.decision || 'submitted';
+      toast.success(`Loan application ${decision}! Redirecting...`);
+      
+      // Navigate to loan status page
+      setTimeout(() => {
+        if (data.loan?.loan_id || data.loan?._id) {
+          const loanId = data.loan.loan_id || data.loan._id;
+          navigate(`/loan/${loanId}`);
+        } else {
+          navigate('/loans');
+        }
+      }, 1500);
     } catch (err) {
+      console.error('Loan application error:', err);
       toast.error(err.response?.data?.detail || 'Failed to submit application');
     } finally {
       setLoading(false);

@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import LoansPage from './pages/LoansPage';
 import LoanApplicationPage from './pages/LoanApplicationPage';
+import LoanStatusPage from './pages/LoanStatusPage';
 import ChatPage from './pages/ChatPage';
 import './App.css';
 
@@ -35,6 +36,7 @@ function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="loans" element={<LoansPage />} />
                 <Route path="apply" element={<LoanApplicationPage />} />
+                <Route path="loan/:loanId" element={<LoanStatusPage />} />
                 <Route path="chat" element={<ChatPage />} />
               </Route>
 
