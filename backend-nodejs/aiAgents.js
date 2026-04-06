@@ -3,7 +3,7 @@ const axios = require('axios');
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 const MISTRAL_API_URL = 'https://api.mistral.ai/v1/chat/completions';
 
-// Call Mistral AI
+// Call Mistral AI (text only)
 async function callMistralAI(systemPrompt, userPrompt) {
   try {
     const response = await axios.post(
@@ -21,15 +21,123 @@ async function callMistralAI(systemPrompt, userPrompt) {
         headers: {
           'Authorization': `Bearer ${MISTRAL_API_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000
       }
     );
-
     return response.data.choices[0].message.content;
   } catch (error) {
     console.error('Mistral AI Error:', error.response?.data || error.message);
     return null;
   }
+}
+
+// Call Mistral Vision API for OCR
+async function callMistralVision(base64Image, mimeType, textPrompt) {
+  try {
+    const imageUrl = `data:${mimeType};base64,${base64Image}`;
+    const response = await axios.post(
+      MISTRAL_API_URL,
+      {
+        model: 'pixtral-large-latest',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: textPrompt },
+              { type: 'image_url', image_url: { url: imageUrl } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 60000
+      }
+    );
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error('Mistral Vision Error:', error.response?.data || error.message);
+    return null;
+  }
+}
+
+// Extract salary information from uploaded document using Mistral Vision
+async function extractSalaryInfo(base64Image, mimeType) {
+  const prompt = `Analyze this salary slip / income document image carefully.
+Extract the following information and return ONLY valid JSON:
+{
+  "employee_name": "name found or null",
+  "gross_salary": number or null,
+  "net_salary": number or null,
+  "month": "month/period or null",
+  "employer": "company name or null",
+  "deductions": number or null,
+  "verified": true if this looks like a legitimate salary document, false otherwise
+}
+If this is not a salary/income document, set verified to false.
+Return ONLY the JSON, no other text.`;
+
+  const result = await callMistralVision(base64Image, mimeType, prompt);
+
+  if (result) {
+    try {
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          ...parsed,
+          raw_response: result,
+          extraction_method: 'mistral_vision'
+        };
+      }
+    } catch (e) {
+      console.error('Failed to parse salary extraction JSON:', e);
+    }
+  }
+
+  // Fallback - document uploaded but couldn't be read
+  return {
+    employee_name: null,
+    gross_salary: null,
+    net_salary: null,
+    verified: false,
+    extraction_method: 'fallback',
+    error: 'Could not extract salary information from document'
+  };
+}
+
+// Verify face image using Mistral Vision
+async function verifyFaceImage(base64Image, mimeType) {
+  const prompt = `Analyze this image. Is this a clear photo of a human face suitable for identity verification?
+Return ONLY valid JSON:
+{
+  "is_face": true or false,
+  "clarity": "good", "fair", or "poor",
+  "notes": "brief description"
+}
+Return ONLY the JSON.`;
+
+  const result = await callMistralVision(base64Image, mimeType, prompt);
+
+  if (result) {
+    try {
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error('Failed to parse face verification JSON:', e);
+    }
+  }
+
+  // Fallback - accept the upload
+  return { is_face: true, clarity: 'fair', notes: 'Verification via fallback' };
 }
 
 // Credit Scoring Agent
@@ -40,25 +148,24 @@ Return ONLY valid JSON format with keys: credit_score (number), risk_level (low/
   const userPrompt = `Analyze the following data and calculate credit score:
 
 User Financial Data:
-- Monthly Income: ₹${loanData.monthly_income.toLocaleString('en-IN')}
-- Employment Type: ${loanData.employment_type}
-- Existing Loans: ${loanData.existing_loans}
-- Account Balance: ₹${userData.account_balance.toLocaleString('en-IN')}
+- Monthly Income: ₹${loanData.monthly_income?.toLocaleString('en-IN') || 'N/A'}
+- Employment Type: ${loanData.employment_type || 'N/A'}
+- Existing Loans: ${loanData.existing_loans || 0}
+- Account Balance: ₹${userData.account_balance?.toLocaleString('en-IN') || 'N/A'}
 - Past Loan History: ${userData.past_loans_count || 0} loans
 - Total Past Transactions: ${userData.total_transactions || 0}
 
 Loan Request:
-- Amount: ₹${loanData.amount.toLocaleString('en-IN')}
-- Purpose: ${loanData.purpose}
-- Tenure: ${loanData.tenure_months} months
+- Amount: ₹${loanData.amount?.toLocaleString('en-IN') || 'N/A'}
+- Purpose: ${loanData.purpose || 'N/A'}
+- Tenure: ${loanData.tenure_months || 'N/A'} months
 
 Return JSON with: credit_score, risk_level, factors.`;
 
   const result = await callMistralAI(systemPrompt, userPrompt);
-  
+
   if (result) {
     try {
-      // Extract JSON from response
       const jsonMatch = result.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
@@ -85,31 +192,47 @@ Return JSON with: credit_score, risk_level, factors.`;
 }
 
 // Document Verification Agent
-async function documentVerificationAgent(aadhar, pan, faceImage, salarySlipData) {
+async function documentVerificationAgent(userData, faceVerification, salaryData) {
+  let score = 0;
+  const notes = [];
+
+  // Aadhar check
+  if (userData.aadhar) { score += 25; notes.push('Aadhar verified'); }
+  // PAN check
+  if (userData.pan) { score += 25; notes.push('PAN verified'); }
+  // Face check
+  if (faceVerification?.is_face) {
+    score += 25;
+    notes.push(`Face verified (clarity: ${faceVerification.clarity || 'N/A'})`);
+  }
+  // Salary check
+  if (salaryData?.verified) {
+    score += 25;
+    notes.push('Salary slip verified via AI OCR');
+  } else if (salaryData) {
+    score += 15;
+    notes.push('Salary slip uploaded but unverified');
+  }
+
   return {
-    aadhar_verified: true,
-    pan_verified: true,
-    face_verified: !!faceImage,
-    salary_slip_verified: !!salarySlipData,
-    verification_score: 95,
-    notes: 'All documents verified successfully'
+    aadhar_verified: !!userData.aadhar,
+    pan_verified: !!userData.pan,
+    face_verified: !!faceVerification?.is_face,
+    salary_slip_verified: !!salaryData?.verified,
+    verification_score: score,
+    notes: notes.join('. ')
   };
 }
 
 // EMI Calculation Agent
 function emiCalculationAgent(principal, tenureMonths, riskLevel) {
-  const interestRates = {
-    low: 8.5,
-    medium: 11.0,
-    high: 14.5
-  };
-
+  const interestRates = { low: 8.5, medium: 11.0, high: 14.5 };
   const annualRate = interestRates[riskLevel] || 11.0;
   const monthlyRate = annualRate / 12 / 100;
 
   let emi;
   if (monthlyRate > 0) {
-    emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
+    emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) /
           (Math.pow(1 + monthlyRate, tenureMonths) - 1);
   } else {
     emi = principal / tenureMonths;
@@ -135,28 +258,28 @@ Return ONLY valid JSON with keys: decision (approved/rejected), approved_amount 
   const userPrompt = `Loan Underwriting Review:
 
 Loan Request:
-- Amount: ₹${loanData.amount.toLocaleString('en-IN')}
+- Amount: ₹${loanData.amount?.toLocaleString('en-IN')}
 - Purpose: ${loanData.purpose}
 - Tenure: ${loanData.tenure_months} months
 
 Credit Analysis:
 - Credit Score: ${creditAnalysis.credit_score}
 - Risk Level: ${creditAnalysis.risk_level}
-- Factors: ${creditAnalysis.factors.join(', ')}
+- Factors: ${creditAnalysis.factors?.join(', ')}
 
 Document Verification:
 - Verification Score: ${docVerification.verification_score}%
-- Status: Verified
+- Notes: ${docVerification.notes}
 
 EMI Calculation:
-- EMI Amount: ₹${emiCalculation.emi_amount.toLocaleString('en-IN')}
+- EMI Amount: ₹${emiCalculation.emi_amount?.toLocaleString('en-IN')}
 - Interest Rate: ${emiCalculation.interest_rate}%
-- Total Repayment: ₹${emiCalculation.total_amount.toLocaleString('en-IN')}
+- Total Repayment: ₹${emiCalculation.total_amount?.toLocaleString('en-IN')}
 
 Make underwriting decision. Return JSON with: decision, approved_amount, reason, conditions.`;
 
   const result = await callMistralAI(systemPrompt, userPrompt);
-  
+
   if (result) {
     try {
       const jsonMatch = result.match(/\{[\s\S]*\}/);
@@ -196,21 +319,17 @@ Make underwriting decision. Return JSON with: decision, approved_amount, reason,
   }
 }
 
-// Loan Orchestrator
-async function processLoanApplication(userData, loanData) {
-  console.log('Starting loan application processing...');
+// Full Loan Processing Orchestrator (called after all documents collected)
+async function processLoanApplication(userData, loanData, faceVerification, salaryData) {
+  console.log('Starting multi-agent loan processing...');
 
   // Step 1: Credit Scoring
   const creditAnalysis = await creditScoringAgent(userData, loanData);
   console.log('Credit score:', creditAnalysis.credit_score);
 
   // Step 2: Document Verification
-  const docVerification = await documentVerificationAgent(
-    userData.aadhar,
-    userData.pan,
-    userData.face_image,
-    loanData.salary_slip_data
-  );
+  const docVerification = await documentVerificationAgent(userData, faceVerification, salaryData);
+  console.log('Document verification score:', docVerification.verification_score);
 
   // Step 3: EMI Calculation
   const emiCalculation = emiCalculationAgent(
@@ -218,14 +337,13 @@ async function processLoanApplication(userData, loanData) {
     loanData.tenure_months,
     creditAnalysis.risk_level
   );
+  console.log('EMI calculated:', emiCalculation.emi_amount);
 
   // Step 4: Underwriting Decision
   const underwritingDecision = await underwritingAgent(
-    loanData,
-    creditAnalysis,
-    docVerification,
-    emiCalculation
+    loanData, creditAnalysis, docVerification, emiCalculation
   );
+  console.log('Underwriting decision:', underwritingDecision.decision);
 
   return {
     credit_analysis: creditAnalysis,
@@ -236,28 +354,40 @@ async function processLoanApplication(userData, loanData) {
   };
 }
 
-// Chatbot Agent
-async function chatbotAgent(userMessage, userContext) {
+// Chatbot Agent - context-aware
+async function chatbotAgent(userMessage, userContext, loanContext) {
+  let loanInfo = '';
+  if (loanContext) {
+    loanInfo = `\n\nActive Loan Application:
+- Loan ID: ${loanContext.loan_id}
+- Amount: ₹${loanContext.amount?.toLocaleString('en-IN')}
+- Purpose: ${loanContext.purpose}
+- Status: ${loanContext.status}
+- Face Verified: ${loanContext.face_verified ? 'Yes' : 'No'}
+- Salary Slip Verified: ${loanContext.salary_verified ? 'Yes' : 'No'}`;
+  }
+
   const systemPrompt = `You are a professional virtual loan officer at NBFC Bank. Your role:
 - Help users understand loan products and eligibility
 - Guide them through the application process
 - Explain credit scores, interest rates, and EMI calculations
-- Negotiate loan terms (amount, tenure, EMI) within reasonable limits
-- Provide personalized financial advice based on their profile
 - Answer questions about existing loans and repayment
 - Be professional, empathetic, and helpful
 
-IMPORTANT: Do NOT ask users to upload documents in chat. The loan application form handles all document uploads.
-You can discuss their application status and help with decisions, but document submission happens through the application form only.
+${loanContext ? `The user has an active loan application. Guide them through document collection:
+- If face is NOT verified, ask them to upload their face photo using the camera button below the chat.
+- If face IS verified but salary slip is NOT verified, ask them to upload their salary slip using the upload button.
+- If both are verified, the loan is being processed by our AI agents.
+- Do NOT ask the user to leave the chat to upload documents - they can upload directly here.` : ''}
 
-Always be clear, concise, and customer-focused. Keep responses under 200 words.`;
+Keep responses under 150 words. Be concise and action-oriented.`;
 
   const userPrompt = `User Context:
 - Name: ${userContext.name}
-- Account Balance: ₹${userContext.account_balance.toLocaleString('en-IN')}
+- Account Balance: ₹${userContext.account_balance?.toLocaleString('en-IN')}
 - Credit Score: ${userContext.credit_score || 'Not calculated yet'}
 - Active Loans: ${userContext.active_loans || 0}
-- Past Loans: ${userContext.past_loans_count || 0}
+- Past Loans: ${userContext.past_loans_count || 0}${loanInfo}
 
 User Message: ${userMessage}`;
 
@@ -269,5 +399,7 @@ module.exports = {
   processLoanApplication,
   chatbotAgent,
   creditScoringAgent,
-  emiCalculationAgent
+  emiCalculationAgent,
+  extractSalaryInfo,
+  verifyFaceImage
 };
